@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>UrbanStyle Chatbot</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f5f5f5;
+}
+.chat{
+    width:400px;
+    margin:20px auto;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 0 10px rgba(0,0,0,.2);
+}
+.header{
+    background:#e83e8c;
+    color:white;
+    padding:15px;
+    font-weight:bold;
+    text-align:center;
+}
+.messages{
+    padding:15px;
+    min-height:460px;
+}
+.bot{
+    background:#fde2ef;
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:10px;
+}
+.user{
+    background:#f8b6d2;
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:10px;
+    text-align:right;
+}
+input{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+}
+button{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat">
+<div class="header">UrbanStyle 👗 Mujeres</div>
+
+<div id="messages" class="messages">
+    <div class="bot">
+        👋 ¡Hola! Bienvenida a UrbanStyle<br><br>
+        ¿Cuál es tu <b>nombre</b>?
+    </div>
+</div>
+
+<div style="padding:15px;">
+    <input id="input" placeholder="Escribe aquí...">
+    <button onclick="enviarTexto()">Enviar</button>
+</div>
+</div>
+
+<script>
+let paso = 0;
+let datos = {};
+
+function enviarTexto(){
+    let input = document.getElementById("input");
+    let valor = input.value.trim();
+    if(valor==="") return;
+
+    agregarUsuario(valor);
+    input.value="";
+
+    if(paso===0){
+        datos.nombre = valor;
+        mostrarPrenda();
+    }
+    else if(paso===6){
+        datos.apellido = valor;
+        mostrarZonas();
+    }
+    else if(paso===9){
+        datos.nacimiento = valor;
+        calcularEdad();
+        pedirWhatsapp();
+    }
+    else if(paso===10){
+        datos.whatsapp = valor;
+        resumen();
+    }
+}
+
+function agregarUsuario(txt){
+    document.getElementById("messages").innerHTML += `<div class="user">${txt}</div>`;
+}
+function agregarBot(txt){
+    document.getElementById("messages").innerHTML += `<div class="bot">${txt}</div>`;
+}
+function botones(lista, accion){
+    let chat = document.getElementById("messages");
+    let cont = document.createElement("div");
+    lista.forEach(op=>{
+        let b = document.createElement("button");
+        b.textContent = op;
+        b.onclick = ()=>{
+            cont.innerHTML = `<div class="user">${op}</div>`;
+            accion(op);
+        };
+        cont.appendChild(b);
+    });
+    chat.appendChild(cont);
+}
+
+/* PRENDA */
+function mostrarPrenda(){
+    paso=1;
+    agregarBot(`Encantada, <b>${datos.nombre}</b> 😊<br>¿Qué prenda deseas?`);
+    botones(["Blusa","Polo","Vestido","Pantalón"], v=>{
+        datos.prenda=v;
+        mostrarTalla();
+    });
+}
+
+/* TALLA SEGÚN PRENDA */
+function mostrarTalla(){
+    paso=2;
+    let tallas = (datos.prenda==="Pantalón")
+        ? ["28","30","32","34"]
+        : ["XS","S","M","L"];
+
+    agregarBot(`¿Qué talla usas en ${datos.prenda}?`);
+    botones(tallas, v=>{
+        datos.talla=v;
+        if(datos.prenda==="Pantalón") mostrarTipoPantalon();
+        else mostrarColor();
+    });
+}
+
+/* TIPO PANTALÓN */
+function mostrarTipoPantalon(){
+    paso=3;
+    agregarBot("¿Qué tipo de pantalón prefieres?");
+    botones(["Baggy","Recto","Slim","Cargo"], v=>{
+        datos.tipoPantalon=v;
+        mostrarColor();
+    });
+}
+
+/* COLOR */
+function mostrarColor(){
+    paso=4;
+    agregarBot("🎨 ¿Qué color prefieres?");
+    botones(["Negro","Blanco","Beige","Azul"], v=>{
+        datos.color=v;
+        pedirApellido();
+    });
+}
+
+/* APELLIDO */
+function pedirApellido(){
+    paso=6;
+    agregarBot(`🛒 Para continuar, ${datos.nombre}<br>¿Cuál es tu <b>apellido</b>?`);
+}
+
+/* ZONAS */
+function mostrarZonas(){
+    paso=7;
+    agregarBot("📍 ¿En qué zona de Lima te encuentras?");
+    botones(["Lima Norte","Lima Centro","Lima Este","Lima Sur"], mostrarDistritos);
+}
+
+/* DISTRITOS */
+function mostrarDistritos(zona){
+    datos.zona = zona;
+    paso=8;
+
+    const distritos = {
+        "Lima Norte":["Ancón","Carabayllo","Comas","Independencia","Los Olivos","Puente Piedra","San Martín de Porres","Santa Rosa"],
+        "Lima Centro":["Barranco","Breña","Jesús María","La Victoria","Lima Cercado","Lince","Magdalena del Mar","Miraflores","Pueblo Libre","San Borja","San Isidro","San Luis","San Miguel","Santiago de Surco","Surquillo"],
+        "Lima Este":["Ate","Chaclacayo","Cieneguilla","El Agustino","La Molina","Lurigancho-Chosica","San Juan de Lurigancho","Santa Anita"],
+        "Lima Sur":["Chorrillos","Lurín","Pachacámac","Pucusana","Punta Hermosa","Punta Negra","San Bartolo","San Juan de Miraflores","Villa El Salvador"]
+    };
+
+    agregarBot(`Selecciona tu distrito (${zona})`);
+    botones(distritos[zona], v=>{
+        datos.distrito=v;
+        pedirNacimiento();
+    });
+}
+
+/* NACIMIENTO */
+function pedirNacimiento(){
+    paso=9;
+    agregarBot("📅 Fecha de nacimiento (DD/MM/AAAA)");
+}
+
+/* EDAD */
+function calcularEdad(){
+    let p = datos.nacimiento.split("/");
+    let f = new Date(p[2],p[1]-1,p[0]);
+    let h = new Date();
+    let e = h.getFullYear()-f.getFullYear();
+    if(h.getMonth()<f.getMonth() || (h.getMonth()==f.getMonth() && h.getDate()<f.getDate())) e--;
+    datos.edad=e;
+}
+
+/* WHATSAPP */
+function pedirWhatsapp(){
+    paso=10;
+    agregarBot("📱 Número de WhatsApp");
+}
+
+/* RESUMEN + WHATSAPP */
+function resumen(){
+    let mensaje = `
+Pedido UrbanStyle:
+Cliente: ${datos.nombre} ${datos.apellido}
+Edad: ${datos.edad} años
+Prenda: ${datos.prenda}
+Talla: ${datos.talla}
+Tipo: ${datos.tipoPantalon || "—"}
+Color: ${datos.color}
+Distrito: ${datos.distrito}
+WhatsApp: ${datos.whatsapp}
+`;
+
+    agregarBot(`
+        ✅ <b>Resumen de compra</b><br><br>
+        Cliente: ${datos.nombre} ${datos.apellido}<br>
+        Edad: ${datos.edad} años<br>
+        Prenda: ${datos.prenda}<br>
+        Talla: ${datos.talla}<br>
+        Tipo: ${datos.tipoPantalon || "—"}<br>
+        Color: ${datos.color}<br>
+        Distrito: ${datos.distrito}<br><br>
+
+        <button onclick="window.open(
+        'https://api.whatsapp.com/send?l=pt&phone=51959663203&text=${encodeURIComponent(mensaje)}',
+        '_blank')">
+        📤 Enviar pedido por WhatsApp
+        </button>
+    `);
+}
+</script>
+
+</body>
+</html>
